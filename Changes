@@ -1,6 +1,23 @@
 Revision history for Posy-Plugin-EntryTitles
 ============================================
 
+0.50 Sun 06 February 2005
+-------------------------
+
+  * (6 Feb 2005) removed Makefile.PL
+
+  * (6 Feb 2005) more selective reindexing
+    - full reindex is only done (a) if there are no cache data files
+      or (b) if the 'reindex' parameter is true.
+    - new 'reindex_cat' parameter will force a partial reindex; just of
+      the given category.
+    - new 'delindex' parameter will force a check for non-existant files
+      and delete them from the index.
+    - if a file is not in the index, but it is in the global (files) index
+      then will simply add it to the this index.
+
+  * (6 Feb 2005) added INSTALL docs
+
 0.40 Sat 15 January 2005
 ------------------------
 

@@ -3,15 +3,15 @@ use strict;
 
 =head1 NAME
 
-Posy::Plugin::EntryTitles - Posy plugin to cache entry titles
+Posy::Plugin::EntryTitles - Posy plugin to cache entry titles.
 
 =head1 VERSION
 
-This describes version B<0.40> of Posy::Plugin::EntryTitles.
+This describes version B<0.50> of Posy::Plugin::EntryTitles.
 
 =cut
 
-our $VERSION = '0.40';
+our $VERSION = '0.50';
 
 =head1 SYNOPSIS
 
@@ -42,7 +42,7 @@ the same way as that for a plain text file.  Those who wish to introduce
 additional formats need only override the L</get_title> method and 
 everything will work just as smoothly.  Ah, inheritance, I love it.
 
-=head1 Configuration
+=head2 Configuration
 
 The following config values can be set:
 
@@ -52,6 +52,39 @@ The following config values can be set:
 
 The full name of the file to be used to store the cache.
 Most people can just leave this at the default.
+
+=back
+
+=head2 Parameters
+
+This plugin will do reindexing the first time it is run, or
+if it detects that there are files in the main file index which
+are new.  Full or partial reindexing can be forced by setting the
+the following parameters:
+
+=over
+
+=item reindex
+
+    /cgi-bin/posy.cgi?reindex=1
+
+Does a full reindex of all files in the data_dir directory.
+
+=item reindex_cat
+
+    /cgi-bin/posy.cgi?reindex_cat=stories/buffy
+
+Does an additive reindex of all files under the given category.  Does not
+delete files from the index.  Useful to call when you know you've just
+updated/added files in a particular category index, and don't want to have
+to reindex the whole site.
+
+=item delindex
+
+    /cgi-bin/posy.cgi?delindex=1
+
+Deletes files from the index if they no longer exist.  Useful when you've
+deleted files but don't want to have to reindex the whole site.
 
 =back
 
@@ -100,21 +133,68 @@ sub index_titles {
     {
 	$reindex = 1 if (!$self->_et_read_cache());
     }
-    # If any files are in $self->{files} but not in $self->{titles}, reindex
-    for my $ffn (keys %{$self->{files}})
-    { exists $self->{titles}->{$ffn}
-	or do { $reindex++; delete $self->{titles}->{$ffn} }; }
-    # If any files are in $self->{titles} but not in $self->{files}, reindex
-    for my $ffn (keys %{$self->{titles}})
-    { exists $self->{files}->{$ffn}
-	or do { $reindex++; delete $self->{titles}->{$ffn} }; }
+    # check for a partial reindex
+    my $reindex_cat = $self->param('reindex_cat');
+    # make sure there's no extraneous slashes
+    $reindex_cat =~ s{^/}{};
+    $reindex_cat =~ s{/$}{};
+    if (!$reindex
+	and $reindex_cat
+	and exists $self->{categories}->{$reindex_cat}
+	and defined $self->{categories}->{$reindex_cat})
+    {
+	$self->debug(1, "EntryTitles: reindexing $reindex_cat");
+	while (my $file_id = each %{$self->{files}})
+	{
+	    if (($self->{files}->{$file_id}->{cat_id} eq $reindex_cat)
+		or ($self->{files}->{$file_id}->{cat_id}
+		    =~ /^$reindex_cat/)
+	       )
+	    {
+		$self->{titles}->{$file_id} = $self->get_title($file_id);
+	    }
+	}
+	$self->_et_save_cache();
+    }
+    elsif (!$reindex)
+    {
+	# If any files are in $self->{files} but not in $self->{titles}
+	# add them to the index
+	my $newfiles = 0;
+	while (my $file_id = each %{$self->{files}})
+	{ exists $self->{titles}->{$file_id}
+	    or do {
+		$newfiles++;
+		$self->{titles}->{$file_id} = $self->get_title($file_id);
+	    };
+	}
+	$self->debug(1, "EntryTitles: added $newfiles new files") if $newfiles;
+	$self->_et_save_cache() if $newfiles;
+    }
 
     if ($reindex) {
-	foreach my $file_id (keys %{$self->{files}})
+	$self->debug(1, "EntryTitles: reindexing ALL");
+	while (my $file_id = each %{$self->{files}})
 	{
 	    $self->{titles}->{$file_id} = $self->get_title($file_id);
 	}
 	$self->_et_save_cache();
+    }
+    else
+    {
+	# If any files not available, delete them and just save the cache
+	if ($self->param('delindex'))
+	{
+	    $self->debug(1, "EntryTitles: checking for deleted files");
+	    my $deletions = 0;
+	    while (my $key = each %{$self->{titles}})
+	    { exists $self->{files}->{$key}
+		or do { $deletions++; delete $self->{titles}->{$key} };
+	    }
+	    $self->debug(1, "EntryTitles: deleted $deletions gone files")
+		if $deletions;
+	    $self->_et_save_cache() if $deletions;
+	}
     }
 } # index_titles
 
@@ -220,6 +300,74 @@ sub _et_save_cache {
     $self->debug(1, "EntryTitles: Saving caches");
     Storable::lock_store($self->{titles}, $self->{config}->{titles_cachefile});
 } # _et_save_cache
+
+=head1 INSTALLATION
+
+Installation needs will vary depending on the particular setup a person
+has.
+
+=head2 Administrator, Automatic
+
+If you are the administrator of the system, then the dead simple method of
+installing the modules is to use the CPAN or CPANPLUS system.
+
+    cpanp -i Posy::Plugin::EntryTitles
+
+This will install this plugin in the usual places where modules get
+installed when one is using CPAN(PLUS).
+
+=head2 Administrator, By Hand
+
+If you are the administrator of the system, but don't wish to use the
+CPAN(PLUS) method, then this is for you.  Take the *.tar.gz file
+and untar it in a suitable directory.
+
+To install this module, run the following commands:
+
+    perl Build.PL
+    ./Build
+    ./Build test
+    ./Build install
+
+Or, if you're on a platform (like DOS or Windows) that doesn't like the
+"./" notation, you can do this:
+
+   perl Build.PL
+   perl Build
+   perl Build test
+   perl Build install
+
+=head2 User With Shell Access
+
+If you are a user on a system, and don't have root/administrator access,
+you need to install Posy somewhere other than the default place (since you
+don't have access to it).  However, if you have shell access to the system,
+then you can install it in your home directory.
+
+Say your home directory is "/home/fred", and you want to install the
+modules into a subdirectory called "perl".
+
+Download the *.tar.gz file and untar it in a suitable directory.
+
+    perl Build.PL --install_base /home/fred/perl
+    ./Build
+    ./Build test
+    ./Build install
+
+This will install the files underneath /home/fred/perl.
+
+You will then need to make sure that you alter the PERL5LIB variable to
+find the modules, and the PATH variable to find the scripts (posy_one,
+posy_static).
+
+Therefore you will need to change:
+your path, to include /home/fred/perl/script (where the script will be)
+
+	PATH=/home/fred/perl/script:${PATH}
+
+the PERL5LIB variable to add /home/fred/perl/lib
+
+	PERL5LIB=/home/fred/perl/lib:${PERL5LIB}
 
 =head1 REQUIRES
 
