@@ -1,0 +1,50 @@
+
+==== NAME ====
+
+Posy::Plugin::EntryTitles - Posy plugin to cache entry titles
+
+
+==== VERSION ====
+
+This describes version ``0.40'' of Posy::Plugin::EntryTitles.
+
+
+==== DESCRIPTION ====
+
+This is a "utility" plugin to be used by other plugins; it maintains a list
+(and cache) of entry titles in $self->{titles} which can be used by other
+plugins (such as Posy::Plugin::NearLinks).
+
+It provides an action method "index_titles" which should be put after
+"index_entries" in the action list.
+
+This plugin is useful not only for efficiency reasons, but it means that
+other plugins don't have to know how to extract the title from a given
+format of file; the title for a HTML file, for example, is not parsed in the
+same way as that for a plain text file. Those who wish to introduce
+additional formats need only override the "get_title" method and everything
+will work just as smoothly. Ah, inheritance, I love it.
+
+
+==== REQUIRES ====
+
+    Posy
+    Posy::Core
+
+    Test::More
+
+
+==== AUTHOR ====
+
+    Kathryn Andersen (RUBYKAT)
+    perlkat AT katspace dot com
+    http://www.katspace.com
+
+
+==== COPYRIGHT AND LICENCE ====
+
+Copyright (c) 2004-2005 by Kathryn Andersen
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
