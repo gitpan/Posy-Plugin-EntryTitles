@@ -7,11 +7,11 @@ Posy::Plugin::EntryTitles - Posy plugin to cache entry titles.
 
 =head1 VERSION
 
-This describes version B<0.50> of Posy::Plugin::EntryTitles.
+This describes version B<0.51> of Posy::Plugin::EntryTitles.
 
 =cut
 
-our $VERSION = '0.50';
+our $VERSION = '0.51';
 
 =head1 SYNOPSIS
 
@@ -64,11 +64,18 @@ the following parameters:
 
 =over
 
+=item reindex_all
+
+    /cgi-bin/posy.cgi?reindex_all=1
+
+Does a full reindex of all files in the data_dir directory,
+clearing the existing information and starting again.
+
 =item reindex
 
     /cgi-bin/posy.cgi?reindex=1
 
-Does a full reindex of all files in the data_dir directory.
+Updates information for new files only.
 
 =item reindex_cat
 
@@ -127,18 +134,18 @@ sub index_titles {
     my $self = shift;
     my $flow_state = shift;
 
-    my $reindex = $self->param('reindex');
-    $reindex = 1 if (!$self->_et_init_caching());
-    if (!$reindex)
+    my $reindex_all = $self->param('reindex_all');
+    $reindex_all = 1 if (!$self->_et_init_caching());
+    if (!$reindex_all)
     {
-	$reindex = 1 if (!$self->_et_read_cache());
+	$reindex_all = 1 if (!$self->_et_read_cache());
     }
     # check for a partial reindex
     my $reindex_cat = $self->param('reindex_cat');
     # make sure there's no extraneous slashes
     $reindex_cat =~ s{^/}{};
     $reindex_cat =~ s{/$}{};
-    if (!$reindex
+    if (!$reindex_all
 	and $reindex_cat
 	and exists $self->{categories}->{$reindex_cat}
 	and defined $self->{categories}->{$reindex_cat})
@@ -156,7 +163,7 @@ sub index_titles {
 	}
 	$self->_et_save_cache();
     }
-    elsif (!$reindex)
+    elsif (!$reindex_all)
     {
 	# If any files are in $self->{files} but not in $self->{titles}
 	# add them to the index
@@ -172,7 +179,7 @@ sub index_titles {
 	$self->_et_save_cache() if $newfiles;
     }
 
-    if ($reindex) {
+    if ($reindex_all) {
 	$self->debug(1, "EntryTitles: reindexing ALL");
 	while (my $file_id = each %{$self->{files}})
 	{

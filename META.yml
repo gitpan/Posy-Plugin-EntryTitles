@@ -1,16 +1,16 @@
 --- #YAML:1.0
 name: Posy-Plugin-EntryTitles
-version: 0.50
+version: 0.51
 author:
   - Kathryn Andersen
 abstract: Posy plugin to cache entry titles.
 license: perl
 requires:
-  Posy: 0.9
+  Posy: 0.95
 build_requires:
   Test::More: 0
 provides:
   Posy::Plugin::EntryTitles:
     file: lib/Posy/Plugin/EntryTitles.pm
-    version: 0.50
-generated_by: Module::Build version 0.2607
+    version: 0.51
+generated_by: Module::Build version 0.261

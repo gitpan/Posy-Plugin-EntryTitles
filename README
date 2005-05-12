@@ -6,7 +6,7 @@ Posy::Plugin::EntryTitles - Posy plugin to cache entry titles.
 
 ==== VERSION ====
 
-This describes version ``0.50'' of Posy::Plugin::EntryTitles.
+This describes version ``0.51'' of Posy::Plugin::EntryTitles.
 
 
 ==== DESCRIPTION ====
@@ -41,10 +41,16 @@ This plugin will do reindexing the first time it is run, or if it detects
 that there are files in the main file index which are new. Full or partial
 reindexing can be forced by setting the the following parameters:
 
+reindex_all
+    /cgi-bin/posy.cgi?reindex_all=1
+
+Does a full reindex of all files in the data_dir directory, clearing the
+existing information and starting again.
+
 reindex
     /cgi-bin/posy.cgi?reindex=1
 
-Does a full reindex of all files in the data_dir directory.
+Updates information for new files only.
 
 reindex_cat
     /cgi-bin/posy.cgi?reindex_cat=stories/buffy
